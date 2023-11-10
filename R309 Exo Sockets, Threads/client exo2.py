@@ -17,7 +17,7 @@ def send_message(message):
 # Boucle principale du client
 while True:
     # Saisir le message à envoyer
-    message = input("Votre message (ou 'bye' pour déconnecter, 'arret' pour arrêter le serveur): ")
+    message = input("Votre message (ou 'bye' pour déconnecter, 'arret' pour arrêter le client): ")
 
     # Envoyer le message au serveur
     send_message(message)
@@ -28,9 +28,9 @@ while True:
         client_socket.close()
         break
     elif message == 'arret':
-        print("Demande d'arrêt du serveur.")
+        print("Arrêt du client.")
         break
 
-    # Acquérir la réponse du serveur
+    # Recevoir la réponse du serveur
     response = client_socket.recv(1024).decode('utf-8')
     print(f"Réponse du serveur: {response}")
