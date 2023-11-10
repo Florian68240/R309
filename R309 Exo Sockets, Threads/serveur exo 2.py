@@ -12,7 +12,7 @@ clients = []
 # Fonction de gestion des clients
 def handle_client(client_socket):
     while True:
-        # Recevoir le message du client
+        # Acquérir le message du client
         message = client_socket.recv(1024).decode('utf-8')
 
         # Vérifier le message de protocole

@@ -31,6 +31,6 @@ while True:
         print("Demande d'arrêt du serveur.")
         break
 
-    # Recevoir la réponse du serveur
+    # Acquérir la réponse du serveur
     response = client_socket.recv(1024).decode('utf-8')
     print(f"Réponse du serveur: {response}")
