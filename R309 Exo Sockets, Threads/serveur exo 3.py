@@ -3,7 +3,7 @@ import threading
 
 # Paramètres du serveur
 HOST = '127.0.0.1'
-PORT = 5552
+PORT = 5551
 
 # Dictionnaire pour stocker les connexions des clients
 clients = {}
