@@ -3,7 +3,7 @@ import threading
 
 # Paramètres du serveur
 HOST = '127.0.0.1'
-PORT = 5553
+PORT = 5552
 
 # Dictionnaire pour stocker les connexions des clients
 clients = {}
@@ -16,7 +16,7 @@ def handle_client(client_socket, client_address):
             # Recevoir le message du client
             message = client_socket.recv(1024).decode('utf-8')
 
-            # Vérifier le message de protocole
+            # Vérifier le message de protocole (bye ou arret)
             if message == 'bye':
                 print(f"Client {client_address} a demandé de se déconnecter.")
                 break
@@ -60,7 +60,7 @@ def accept_clients():
         client_thread.start()
 
 
-# Démarrer un thread pour accepter les connexions des clients
+# Démarrer un thread pour accepter les connexions d'un clients
 accept_thread = threading.Thread(target=accept_clients)
 accept_thread.start()
 

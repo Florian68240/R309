@@ -3,7 +3,7 @@ import threading
 
 # Paramètres du client
 HOST = '127.0.0.1'
-PORT = 5553
+PORT = 5552
 
 # Configuration du client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
