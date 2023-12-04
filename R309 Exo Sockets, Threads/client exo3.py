@@ -1,48 +1,51 @@
 import socket
 import threading
 
-# Paramètres du client
-HOST = '127.0.0.1'
-PORT = 5551
-
-# Configuration du client
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((HOST, PORT))
-
-
-# Fonction pour envoyer des messages au serveur
-def send_message(message):
-    client_socket.send(message.encode('utf-8'))
-
-
-# Fonction pour gérer la réception de messages du serveur
-def receive_messages():
+def receive_messages(client_socket):
     try:
         while True:
-            # Recevoir la réponse du serveur
-            response = client_socket.recv(1024).decode('utf-8')
-            print(f"Réponse du serveur: {response}")
-    except ConnectionResetError:
-        print("Connexion avec le serveur perdue.")
+            server_response = client_socket.recv(1024).decode('utf-8')
+            if not server_response:
+                print("La connexion au serveur a été interrompue.")
+                break
 
+            print(f"Réponse du serveur : {server_response}")
 
-# Démarrer un thread pour recevoir les messages du serveur
-receive_thread = threading.Thread(target=receive_messages)
-receive_thread.start()
+            if server_response == "arret":
+                print("Le serveur a été arrêté par le client")
+                break
 
-# Boucle principale du client
-while True:
-    # Saisir le message à envoyer
-    message = input("Votre message (ou 'bye' pour déconnecter, 'arret' pour arrêter le client): ")
+    except ConnectionError as e:
+        print(f"Erreur de connexion : {e}")
 
-    # Envoyer le message au serveur
-    send_message(message)
-
-    # Vérifier le message de protocole
-    if message == 'bye':
-        print("Déconnexion du client.")
+    finally:
         client_socket.close()
-        break
-    elif message == 'arret':
-        print("Arrêt du client.")
-        break
+
+def main():
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = ('127.0.0.1', 12347)
+
+    try:
+        client_socket.connect(server_address)
+
+        receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+        receive_thread.start()
+
+        while True:
+            client_message = input("Message du client : ")
+            client_socket.send(client_message.encode('utf-8'))
+
+            if client_message in ["arret", "bye"]:
+                print("Le client se déconnecte.")
+                break
+
+    except ConnectionRefusedError:
+        print("La connexion au serveur a été refusée. Assurez-vous que le serveur est en cours d'exécution.")
+    except ConnectionError as e:
+        print(f"Erreur de connexion : {e}")
+
+    finally:
+        client_socket.close()
+
+if __name__ == "__main__":
+    main()
