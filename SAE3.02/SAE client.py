@@ -1,6 +1,5 @@
 import socket
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
-import mysql.connector
 
 class ChatClient(QWidget):
     def __init__(self):
@@ -43,8 +42,9 @@ class ChatClient(QWidget):
         username = self.entry_username.text()
         password = self.entry_password.text()
 
-        client_socket.send(username.encode())
-        client_socket.send(password.encode())
+        # Envoyer les données d'authentification au serveur sous forme d'une seule chaîne séparée par un caractère spécial (par exemple, ';')
+        auth_data = f"{username};{password}"
+        client_socket.send(auth_data.encode())
 
         result = client_socket.recv(1024).decode()
 
@@ -59,7 +59,7 @@ class ChatClient(QWidget):
 
 if __name__ == '__main__':
     host = '127.0.0.1'
-    port = 5556
+    port = 5557
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))

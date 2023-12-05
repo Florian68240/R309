@@ -19,8 +19,9 @@ db.commit()
 # Fonction pour gérer la connexion client
 def handle_client(client_socket):
     # Authentification du client
-    username = client_socket.recv(1024).decode()
-    password = client_socket.recv(1024).decode()
+    auth_data = client_socket.recv(1024).decode().split(';')
+    username = auth_data[0]
+    password = auth_data[1]
 
     # Vérification des identifiants dans la base de données
     cursor.execute('SELECT * FROM users WHERE username=%s AND password=%s', (username, password))
@@ -50,7 +51,7 @@ def handle_client(client_socket):
 
 # Paramètres du serveur
 host = '127.0.0.1'
-port = 5556
+port = 5557
 
 # Mise en place du serveur
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
