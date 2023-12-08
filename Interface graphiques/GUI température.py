@@ -5,9 +5,11 @@ class TemperatureConverter(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Initialiser l'interface utilisateur
         self.init_ui()
 
     def init_ui(self):
+        # Widgets de l'interface utilisateur
         self.label_instruction = QLabel("Entrez la température:")
         self.entry = QLineEdit()
 
@@ -27,7 +29,7 @@ class TemperatureConverter(QWidget):
         self.help_button = QPushButton("?")
         self.help_button.clicked.connect(self.show_help_message)
 
-        # Mise en page
+        # Mise en page des widgets
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.label_instruction)
         input_layout.addWidget(self.entry)
@@ -47,14 +49,16 @@ class TemperatureConverter(QWidget):
         main_layout.addLayout(result_layout)
         main_layout.addLayout(button_layout)
 
+        # Définir la mise en page principale de la fenêtre
         self.setLayout(main_layout)
         self.setWindowTitle("Convertisseur Celsius/Kelvin")
 
     def on_convert_button_click(self):
-        # Mettez à jour le résultat lorsqu'on clique sur le bouton
+        # Appelé lorsqu'on clique sur le bouton de conversion
         self.update_result()
 
     def update_result(self):
+        # Mettre à jour le résultat de la conversion
         temperature = self.entry.text()
         unit_from = self.unit_combobox_from.currentText()
         unit_to = self.unit_combobox_to.currentText()
@@ -72,6 +76,7 @@ class TemperatureConverter(QWidget):
             self.show_error("Veuillez entrer une température valide.")
 
     def show_error(self, message):
+        # Afficher une boîte de dialogue d'erreur
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Critical)
         msg_box.setWindowTitle("Erreur")
@@ -79,10 +84,12 @@ class TemperatureConverter(QWidget):
         msg_box.exec()
 
     def show_help_message(self):
+        # Afficher une boîte de dialogue d'aide
         help_msg = "Permet de convertir un nombre de Kelvin à Celsius ou inversement."
         QMessageBox.information(self, "Aide", help_msg)
 
 if __name__ == '__main__':
+    # Point d'entrée de l'application
     app = QApplication(sys.argv)
     converter = TemperatureConverter()
     converter.show()
