@@ -1,12 +1,11 @@
-# This is a sample Python script.
+# Ceci est un script Python d'exemple.
 
-# Press Maj+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
+# Appuyez sur Maj+F10 pour l'exécuter ou remplacez-le par votre code.
+# Appuyez deux fois sur Maj pour rechercher partout des classes, fichiers, fenêtres d'outils, actions et paramètres.
 
 def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    # Utilisez un point d'arrêt dans la ligne de code ci-dessous pour déboguer votre script.
+    print(f'Salut, {name}')  # Appuyez sur Ctrl+F8 pour basculer le point d'arrêt.
 
 def divEntier(x: int, y: int) -> int:
         if x < y:
@@ -15,7 +14,7 @@ def divEntier(x: int, y: int) -> int:
             x = x - y
             return divEntier(x, y) + 1
 
-# Press the green button in the gutter to run the script.
+# Appuyez sur le bouton vert dans la marge pour exécuter le script.
 if __name__ == '__main__':
     print (divEntier(50,4))
 
