@@ -110,6 +110,7 @@ class ChatClient(QWidget):
         except Exception as e:
             print(f"Error during authentication: {e}")
 
+
     def send_message(self):
         if self.client_thread and self.client_thread.client_socket:
             message = self.entry_message.text()
@@ -126,7 +127,7 @@ class ChatClient(QWidget):
         self.client_thread.wait()
 
         self.button_authenticate.setEnabled(True)
-        self.button_send.setEnabled(False)
+        self.button_send.setEnabled(True)
 
 if __name__ == '__main__':
     host = '127.0.0.1'
