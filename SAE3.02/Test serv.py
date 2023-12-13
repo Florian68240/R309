@@ -143,7 +143,8 @@ if __name__ == '__main__':
             id INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(255) NOT NULL,
             room VARCHAR(255) NOT NULL,
-            message TEXT NOT NULL
+            message TEXT NOT NULL,
+            heure_envoi DATETIME
         )
     """)
     db_connection.commit()
