@@ -116,21 +116,21 @@ class ChatServer:
         db_connection.commit()
 
 
-def save_users_from_database(self, username):
-    # Enregistrement du message dans la base de données
-    cursor = db_connection.cursor()
-    query = "INSERT INTO utilisateur (username) VALUES (%s)"
-    value = (username)
-    cursor.execute(query, value)
-    db_connection.commit()
+    def save_users_from_database(self, username):
+        # Enregistrement du message dans la base de données
+        cursor = db_connection.cursor()
+        query = "INSERT INTO utilisateur (username) VALUES (%s)"
+        value = (username)
+        cursor.execute(query, value)
+        db_connection.commit()
 
-def save_channel_from_database(self, username):
-    # Enregistrement du message dans la base de données
-    cursor = db_connection.cursor()
-    query = "INSERT INTO channel (username) VALUES (%s)"
-    value = (username)
-    cursor.execute(query, value)
-    db_connection.commit()
+    def save_channel_from_database(self, username):
+        # Enregistrement du message dans la base de données
+        cursor = db_connection.cursor()
+        query = "INSERT INTO channel (username) VALUES (%s)"
+        value = (username)
+        cursor.execute(query, value)
+        db_connection.commit()
 
 
 

@@ -85,8 +85,6 @@ class ChatClient(QWidget):
         self.button_create_user = QPushButton('New User')
         self.button_create_user.clicked.connect(self.handle_create_user)
 
-        self.button_fetch_users = QPushButton('Fetch Users')
-        self.button_fetch_users.clicked.connect(self.fetch_users)
 
         self.text_browser = QTextBrowser()
 
@@ -102,7 +100,6 @@ class ChatClient(QWidget):
         layout.addWidget(self.entry_message)
         layout.addWidget(self.button_send)
         layout.addWidget(self.button_create_user)
-        layout.addWidget(self.button_fetch_users)
         layout.addWidget(self.text_browser)
 
         self.setLayout(layout)
@@ -164,15 +161,7 @@ class ChatClient(QWidget):
         else:
             print("Error creating user: Unknown response")
 
-    def fetch_users(self):
-        try:
-            self.client_thread = ClientThread(self.host, self.port, "SELECT_USERS")
-            self.client_thread.message_received.connect(self.receive_message)
-            self.client_thread.disconnected.connect(self.client_disconnected)
-            self.client_thread.start()
 
-        except Exception as e:
-            print(f"Error fetching users: {e}")
 
 if __name__ == '__main__':
     host = '127.0.0.1'
