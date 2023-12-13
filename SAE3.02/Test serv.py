@@ -1,4 +1,5 @@
 import socket
+from datetime import datetime
 import threading
 import mysql.connector
 from mysql.connector import Error
@@ -116,8 +117,8 @@ class ChatServer:
     def save_message_to_database(self, username, room, message):
         # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
-        query = "INSERT INTO chat_messages (username, room, message) VALUES (%s, %s, %s)"
-        values = (username, room, message)
+        query = "INSERT INTO chat_messages (username, room, message, heure_envoi) VALUES (%s, %s, %s, %s)"
+        values = (username, room, message, datetime.now())
         cursor.execute(query, values)
         db_connection.commit()
 

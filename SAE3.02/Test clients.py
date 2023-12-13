@@ -1,6 +1,6 @@
 import socket
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QTextBrowser, QComboBox, QInputDialog
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QDateTime
 import mysql.connector
 
 # Connexion à la base de données MySQL
@@ -124,7 +124,10 @@ class ChatClient(QWidget):
     def send_message(self):
         if self.client_thread and self.client_thread.client_socket:
             message = self.entry_message.text()
-            self.client_thread.client_socket.send(message.encode())
+            # Obtenir la date et l'heure actuelles
+            QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
+            message_with_datetime = f" {message}"
+            self.client_thread.client_socket.send(message_with_datetime.encode())
             self.entry_message.clear()
         else:
             print("Not connected to the server.")
