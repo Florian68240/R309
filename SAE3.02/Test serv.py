@@ -116,20 +116,20 @@ class ChatServer:
         db_connection.commit()
 
 
-    def save_users_from_database(self, username):
+    def save_users_from_database(self, username, password):
         # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
-        query = "INSERT INTO utilisateur (username) VALUES (%s)"
-        value = (username)
-        cursor.execute(query, value)
+        query = "INSERT INTO utilisateur (username, password) VALUES (%s, %s)"
+        values = (username, password)
+        cursor.execute(query, values)
         db_connection.commit()
 
-    def save_channel_from_database(self, username):
+    def save_channel_from_database(self, username, room, message):
         # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
-        query = "INSERT INTO channel (username) VALUES (%s)"
-        value = (username)
-        cursor.execute(query, value)
+        query = "INSERT INTO channel (username, room, message, heure_envoi) VALUES (%s, %s, %s, %s)"
+        values = (username, room, message, datetime.now())
+        cursor.execute(query, values)
         db_connection.commit()
 
 
@@ -149,28 +149,28 @@ if __name__ == '__main__':
             heure_envoi DATETIME
         )
     """)
-    db_connection.commit()
+
 
 
     # Création de la table Utilisateur si elle n'existe pas
     cursor = db_connection.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS utilisateur (
-            username VARCHAR(255) PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL,
             password VARCHAR(255)
         )
     """)
-    db_connection.commit()
+
 
     # Création de la table Utilisateur si elle n'existe pas
     cursor = db_connection.cursor()
     cursor.execute("""
       CREATE TABLE IF NOT EXISTS channel (
               id INT AUTO_INCREMENT PRIMARY KEY,
-              username VARCHAR(255),
-              message TEXT,
-              heure_envoi DATETIME,
-              FOREIGN KEY (utilisateur_username) REFERENCES utilisateur(username)
+              username VARCHAR(255) NOT NULL,
+              message TEXT NOT NULL,
+              heure_envoi DATETIME
           )
       """)
     db_connection.commit()
