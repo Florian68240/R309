@@ -58,6 +58,7 @@ class ChatServer:
                 new_username, new_password = auth_data[1], auth_data[2]
                 if new_username not in user_credentials:
                     user_credentials[new_username] = {"Password": new_password, "Room": None}
+                    self.save_users_from_database(new_username, new_password)
                     client_socket.send("USER_CREATED".encode())
                 else:
                     client_socket.send("USER_EXISTS".encode())
@@ -70,7 +71,6 @@ class ChatServer:
                 else:
                     client_socket.send("AUTH_FAIL".encode())
                     return  # Ne pas continuer si l'authentification échoue
-
 
             self.clients[client_socket] = {"username": username, "room": room}
             print(f"Client connected: {username} (Room: {room})")
@@ -86,7 +86,10 @@ class ChatServer:
                 print(f"Received message from {sender_username} (Room: {room}): {message}")
 
                 # Enregistrement du message dans la base de données
-                self.save_message_to_database(username, room, message)
+                self.save_message_to_database(sender_username, room, message)
+
+                # Enregistrement du message dans la table "channel"
+                self.save_channel_from_database(sender_username, room, message)
 
                 for socket_in_room, data_in_room in list(self.clients.items()):
                     try:
@@ -115,7 +118,6 @@ class ChatServer:
         cursor.execute(query, values)
         db_connection.commit()
 
-
     def save_users_from_database(self, username, password):
         # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
@@ -132,10 +134,8 @@ class ChatServer:
         cursor.execute(query, values)
         db_connection.commit()
 
-
-
 if __name__ == '__main__':
-    host = '127.0.0.1'
+    host = '0.0.0.0'
     port = 5557
 
     # Création de la table chat_messages si elle n'existe pas
@@ -150,32 +150,26 @@ if __name__ == '__main__':
         )
     """)
 
-
-
     # Création de la table Utilisateur si elle n'existe pas
-    cursor = db_connection.cursor()
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS utilisateur (
+        CREATE TABLE IF NOT EXISTS utilisateur (
             id INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(255) NOT NULL,
             password VARCHAR(255)
         )
     """)
 
-
-    # Création de la table Utilisateur si elle n'existe pas
-    cursor = db_connection.cursor()
+    # Création de la table Channel si elle n'existe pas
     cursor.execute("""
-      CREATE TABLE IF NOT EXISTS channel (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              username VARCHAR(255) NOT NULL,
-              message TEXT NOT NULL,
-              heure_envoi DATETIME
-          )
-      """)
+        CREATE TABLE IF NOT EXISTS channel (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL,
+            room VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            heure_envoi DATETIME
+        )
+    """)
     db_connection.commit()
-
-
 
     server = ChatServer(host, port)
     server.start()
