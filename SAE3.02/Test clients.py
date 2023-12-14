@@ -100,7 +100,6 @@ class ChatClient(QWidget):
         layout.addWidget(self.entry_message)
         layout.addWidget(self.button_send)
         layout.addWidget(self.button_create_user)
-
         layout.addWidget(self.text_browser)
 
         self.setLayout(layout)
