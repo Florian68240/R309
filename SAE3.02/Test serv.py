@@ -115,7 +115,6 @@ class ChatServer:
         cursor.execute(query, values)
         db_connection.commit()
 
-
     def user_exists_in_database(self, username):
         # Vérifie si l'utilisateur existe déjà dans la base de données
         cursor = db_connection.cursor()
