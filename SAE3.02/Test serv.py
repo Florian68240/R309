@@ -133,7 +133,6 @@ class ChatServer:
         result = cursor.fetchone()
         return result is not None
 
-
 if __name__ == '__main__':
     host = '127.0.0.1'
     port = 5557
