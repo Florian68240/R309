@@ -1,6 +1,6 @@
 import socket
-from datetime import datetime
 import threading
+from datetime import datetime
 import mysql.connector
 from mysql.connector import Error
 import os
@@ -18,13 +18,15 @@ try:
 except Error as e:
     print(f"Error connecting to MySQL database: {e}")
 
-
 class ChatServer:
     def __init__(self, host, port):
         self.host = host
         self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = {}
+        self.banned_users = set()
+        self.room_verification_required = {"Informatique", "Comptabilité", "Marketing"}
+        self.access_requests = {}
 
     def start(self):
         self.server_socket.bind((self.host, self.port))
@@ -37,10 +39,9 @@ class ChatServer:
             threading.Thread(target=self.handle_client, args=(client_socket,)).start()
 
     def handle_client(self, client_socket):
-        username = None  # Initialise username to avoid scope issues
+        username = None
 
         try:
-            # Receive authentication data
             auth_data = client_socket.recv(1024).decode()
             if not auth_data:
                 raise Exception("Invalid authentication data")
@@ -49,22 +50,27 @@ class ChatServer:
             command = auth_data[0]
 
             if command == "CREATE_USER":
-                # Création d'un nouvel utilisateur
                 new_username, new_password = auth_data[1], auth_data[2]
                 if not self.user_exists_in_database(new_username):
                     self.save_users_from_database(new_username, new_password)
                     client_socket.send("USER_CREATED".encode())
-                    username = new_username  # Set username upon successful creation
+                    username = new_username
                 else:
                     client_socket.send("USER_EXISTS".encode())
             elif command == "AUTHENTICATE":
-                # Vérification des informations d'authentification
                 username, password, room = auth_data[1], auth_data[2], auth_data[3]
                 if self.authenticate_user_in_database(username, password):
-                    client_socket.send("AUTH_SUCCESS".encode())
+                    if username in self.banned_users:
+                        client_socket.send("USER_BANNED".encode())
+                        return
+                    elif room in self.room_verification_required:
+                        client_socket.send("ROOM_VERIFICATION_REQUIRED".encode())
+                        return
+                    else:
+                        client_socket.send("AUTH_SUCCESS".encode())
                 else:
                     client_socket.send("AUTH_FAIL".encode())
-                    return  # Ne pas continuer si l'authentification échoue
+                    return
 
             self.clients[client_socket] = {"username": username, "room": room}
             print(f"Client connected: {username} (Room: {room})")
@@ -80,13 +86,18 @@ class ChatServer:
                     self.handle_ban_command(message)
                 elif message.startswith("/kill"):
                     self.handle_kill_command()
+                elif message.startswith("/room"):
+                    self.handle_room_command(message)
+                elif message.startswith("/request"):
+                    self.handle_request_command(message)
+                elif message.startswith("/verification"):
+                    self.handle_verification_command(message)
                 else:
                     sender_username = self.clients[client_socket]["username"]
                     room = self.clients[client_socket]["room"]
 
                     print(f"Received message from {sender_username} (Room: {room}): {message}")
 
-                    # Enregistrement du message dans la base de données
                     self.save_message_to_database(sender_username, room, message)
 
                     for socket_in_room, data_in_room in list(self.clients.items()):
@@ -94,7 +105,6 @@ class ChatServer:
                             if data_in_room["room"] == room:
                                 socket_in_room.send(f"{sender_username} (Room: {room}): {message}".encode())
                         except:
-                            # Remove broken connections
                             del self.clients[socket_in_room]
 
         except Exception as e:
@@ -104,17 +114,14 @@ class ChatServer:
             try:
                 del self.clients[client_socket]
             except KeyError:
-                pass  # Handle the case where the key does not exist
+                pass
 
             client_socket.close()
 
     def handle_kick_command(self, message):
-        # Extrait le nom d'utilisateur à partir du message (par exemple, si le message est "/kick @Mathieu", extrayez "Mathieu")
         username_to_kick = message.split(" ")[1].lstrip("@")
 
-        # Ajoutez la logique pour expulser l'utilisateur du serveur ou prendre toute autre mesure appropriée
-        if username_to_kick in [data["username"] for data in self.clients.values()]:
-            # Expulsez l'utilisateur en fermant sa connexion (vous devrez adapter cela en fonction de votre implémentation)
+        if username_to_kick in self.clients.values():
             for client_socket, data in list(self.clients.items()):
                 if data["username"] == username_to_kick:
                     client_socket.send("You have been kicked from the server.".encode())
@@ -122,42 +129,82 @@ class ChatServer:
                     client_socket.close()
                     break
         else:
-            # Si l'utilisateur n'est pas trouvé, envoyez un message approprié
             print(f"User {username_to_kick} not found.")
 
     def handle_ban_command(self, message):
-        # Extrait le nom d'utilisateur à partir du message (par exemple, si le message est "/ban @Mathieu", extrayez "Mathieu")
         username_to_ban = message.split(" ")[1].lstrip("@")
 
-        # Ajoutez la logique pour bannir l'utilisateur du serveur ou prendre toute autre mesure appropriée
-        if username_to_ban in [data["username"] for data in self.clients.values()]:
-            # Bannissez l'utilisateur en fermant sa connexion et prenez des mesures supplémentaires si nécessaire
+        if username_to_ban in self.clients.values():
             for client_socket, data in list(self.clients.items()):
                 if data["username"] == username_to_ban:
                     client_socket.send("You have been banned from the server.".encode())
                     del self.clients[client_socket]
                     client_socket.close()
-                    # Ajoutez une logique de bannissement ici (par exemple, ajoutez le nom d'utilisateur à une liste de bannissement)
+                    self.banned_users.add(username_to_ban)
                     break
         else:
-            # Si l'utilisateur n'est pas trouvé, envoyez un message approprié
             print(f"User {username_to_ban} not found.")
 
     def handle_kill_command(self):
-        # Ajoutez la logique pour provoquer l'arrêt du serveur et avertissez les clients avant de s'arrêter
         for client_socket in self.clients.keys():
             try:
                 client_socket.send("Server is shutting down. Goodbye.".encode())
                 client_socket.close()
             except:
                 pass
-        # Vous pouvez ajouter ici toute autre logique nécessaire avant l'arrêt du serveur
-        # Ensuite, vous pouvez arrêter le thread principal ou prendre d'autres mesures selon vos besoins
         print("Server is shutting down.")
-        os._exit(0)  # Notez que ceci est une manière brutale d'arrêter le serveur
+        os._exit(0)
+
+    def handle_room_command(self, message):
+        # Extrait le nom d'utilisateur et la salle à partir du message (par exemple, si le message est "/room @Mathieu Informatique", extrayez "Mathieu" et "Informatique")
+        parts = message.split(" ")
+        username_to_room = parts[1].lstrip("@")
+        room = parts[2]
+
+        # Si l'utilisateur est trouvé, changez la salle de l'utilisateur
+        if username_to_room in self.clients.values():
+            for client_socket, data in list(self.clients.items()):
+                if data["username"] == username_to_room:
+                    data["room"] = room
+                    client_socket.send(f"You have joined the room {room}.".encode())
+                    break
+        else:
+            print(f"User {username_to_room} not found.")
+
+    def handle_request_command(self, message):
+        # Extrait le nom d'utilisateur à partir du message (par exemple, si le message est "/request @Mathieu", extrayez "Mathieu")
+        username_to_request = message.split(" ")[1].lstrip("@")
+
+        # Ajoutez la demande d'accès au dictionnaire access_requests
+        self.access_requests[username_to_request] = {"room": None, "client_socket": client_socket}
+
+    def handle_verification_command(self, message):
+        # Extrait le nom d'utilisateur et l'action à partir du message (par exemple, si le message est "/verification @Mathieu Allow", extrayez "Mathieu" et "Allow")
+        parts = message.split(" ")
+        username = parts[1].lstrip("@")
+        action = parts[2]
+
+        # Gérez la réponse de vérification ici
+        if username in self.access_requests:
+            if action.lower() == "allow":
+                # Si l'action est "allow", autorisez l'accès à la salle et informez l'utilisateur
+                self.access_requests[username]["client_socket"].send(f"Access to the room granted.".encode())
+                print(f"{username} a obtenu l'accès à la salle.")
+            elif action.lower() == "deny":
+                # Si l'action est "deny", refusez l'accès à la salle et informez l'utilisateur
+                self.access_requests[username]["client_socket"].send(f"Access to the room denied.".encode())
+                print(f"{username} s'est vu refuser l'accès à la salle.")
+            else:
+                # Si l'action n'est ni "allow" ni "deny", informez l'utilisateur que l'action est invalide
+                self.access_requests[username]["client_socket"].send(f"Invalid verification action.".encode())
+                print(f"Invalid verification action for {username}.")
+            # Supprimez la demande d'accès du dictionnaire access_requests
+            del self.access_requests[username]
+        else:
+            # Si l'utilisateur n'a pas de demande d'accès correspondante, informez le serveur
+            print(f"No access request found for {username}.")
 
     def save_message_to_database(self, username, room, message):
-        # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
         query = "INSERT INTO chat_messages (username, room, message, heure_envoi) VALUES (%s, %s, %s, %s)"
         values = (username, room, message, datetime.now())
@@ -165,7 +212,6 @@ class ChatServer:
         db_connection.commit()
 
     def save_users_from_database(self, username, password):
-        # Enregistrement du message dans la base de données
         cursor = db_connection.cursor()
         query = "INSERT INTO utilisateur (username, password) VALUES (%s, %s)"
         values = (username, password)
@@ -173,7 +219,6 @@ class ChatServer:
         db_connection.commit()
 
     def user_exists_in_database(self, username):
-        # Vérifie si l'utilisateur existe déjà dans la base de données
         cursor = db_connection.cursor()
         query = "SELECT * FROM utilisateur WHERE username = %s"
         values = (username,)
@@ -182,18 +227,11 @@ class ChatServer:
         return result is not None
 
     def authenticate_user_in_database(self, username, password):
-        # Vérifie les informations d'authentification dans la base de données
         cursor = db_connection.cursor()
         query = "SELECT * FROM utilisateur WHERE username = %s AND password = %s"
         values = (username, password)
         cursor.execute(query, values)
         result = cursor.fetchone()
-
-        # Vérifiez si l'utilisateur est dans la liste des utilisateurs bannis
-        banned_users = []  # Remplacez ceci par la vraie liste des utilisateurs bannis
-        if username in banned_users:
-            return False  # L'utilisateur est banni
-
         return result is not None
 
 
@@ -201,7 +239,6 @@ if __name__ == '__main__':
     host = '127.0.0.1'
     port = 5557
 
-    # Création de la table chat_messages si elle n'existe pas
     cursor = db_connection.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_messages (
@@ -213,7 +250,6 @@ if __name__ == '__main__':
         )
     """)
 
-    # Création de la table Utilisateur si elle n'existe pas
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS utilisateur (
             id INT AUTO_INCREMENT PRIMARY KEY,

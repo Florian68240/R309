@@ -1,18 +1,10 @@
 import socket
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QTextBrowser, QComboBox, QInputDialog
 from PyQt5.QtCore import QThread, pyqtSignal, QDateTime
-import mysql.connector
-
-# Connexion à la base de données MySQL
-db_connection = mysql.connector.connect(
-    host="localhost",
-    user="Flo",
-    password="azerty123456",
-    database="SAE302"
-)
 
 class ClientThread(QThread):
     message_received = pyqtSignal(str)
+    verification_response = pyqtSignal(str)
     disconnected = pyqtSignal()
 
     def __init__(self, host, port, command, *args):
@@ -36,7 +28,11 @@ class ClientThread(QThread):
                 message = self.client_socket.recv(1024).decode()
                 if not message:
                     break
-                self.message_received.emit(message)
+
+                if message.startswith("Access to the room granted.") or message.startswith("Access to the room denied.") or message.startswith("Invalid verification action."):
+                    self.verification_response.emit(message)
+                else:
+                    self.message_received.emit(message)
         except Exception as e:
             print(f"Error in ClientThread: {e}")
         finally:
@@ -46,12 +42,14 @@ class ClientThread(QThread):
 
 class ChatClient(QWidget):
     message_received = pyqtSignal(str)
+    verification_response = pyqtSignal(str)
 
     def __init__(self, host, port):
         super().__init__()
         self.host = host
         self.port = port
         self.client_thread = None
+        self.username = None
         self.init_ui()
 
     def init_ui(self):
@@ -123,6 +121,7 @@ class ChatClient(QWidget):
 
             self.client_thread = ClientThread(self.host, self.port, "AUTHENTICATE", username, password, room)
             self.client_thread.message_received.connect(self.receive_message)
+            self.client_thread.verification_response.connect(self.handle_verification_response)
             self.client_thread.disconnected.connect(self.client_disconnected)
             self.client_thread.start()
 
@@ -132,9 +131,8 @@ class ChatClient(QWidget):
     def send_message(self):
         if self.client_thread and self.client_thread.client_socket:
             message = self.entry_message.text()
-            # Obtenir la date et l'heure actuelles
             QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
-            message_with_datetime = f"{message}"
+            message_with_datetime = f" {message}"
             self.client_thread.client_socket.send(message_with_datetime.encode())
             self.entry_message.clear()
         else:
@@ -142,6 +140,10 @@ class ChatClient(QWidget):
 
     def receive_message(self, message):
         self.message_received.emit(message)
+
+    def handle_verification_response(self, response):
+        print(response)
+        # Handle verification response here, e.g., show a dialog or take appropriate actions
 
     def client_disconnected(self):
         self.client_thread.quit()
@@ -173,19 +175,15 @@ class ChatClient(QWidget):
             print("Error creating user: Unknown response")
 
     def kick_user(self):
-        # Envoie la commande /kick suivie du nom d'utilisateur à kicker
         username = self.entry_message.text()
         self.client_thread.client_socket.send(f"/kick @{username}".encode())
 
     def ban_user(self):
-        # Envoie la commande /ban suivie du nom d'utilisateur à bannir
         username = self.entry_message.text()
         self.client_thread.client_socket.send(f"/ban @{username}".encode())
 
     def kill_server(self):
-        # Envoie la commande /kill pour arrêter le serveur
         self.client_thread.client_socket.send("/kill".encode())
-
 
 if __name__ == '__main__':
     host = '127.0.0.1'
