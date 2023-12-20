@@ -85,6 +85,14 @@ class ChatClient(QWidget):
         self.button_create_user = QPushButton('New User')
         self.button_create_user.clicked.connect(self.handle_create_user)
 
+        self.button_kick = QPushButton('Kick User')
+        self.button_kick.clicked.connect(self.kick_user)
+
+        self.button_ban = QPushButton('Ban User')
+        self.button_ban.clicked.connect(self.ban_user)
+
+        self.button_kill = QPushButton('Kill Server')
+        self.button_kill.clicked.connect(self.kill_server)
 
         self.text_browser = QTextBrowser()
 
@@ -100,6 +108,9 @@ class ChatClient(QWidget):
         layout.addWidget(self.entry_message)
         layout.addWidget(self.button_send)
         layout.addWidget(self.button_create_user)
+        layout.addWidget(self.button_kick)
+        layout.addWidget(self.button_ban)
+        layout.addWidget(self.button_kill)
         layout.addWidget(self.text_browser)
 
         self.setLayout(layout)
@@ -123,7 +134,7 @@ class ChatClient(QWidget):
             message = self.entry_message.text()
             # Obtenir la date et l'heure actuelles
             QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
-            message_with_datetime = f" {message}"
+            message_with_datetime = f"{message}"
             self.client_thread.client_socket.send(message_with_datetime.encode())
             self.entry_message.clear()
         else:
@@ -161,6 +172,19 @@ class ChatClient(QWidget):
         else:
             print("Error creating user: Unknown response")
 
+    def kick_user(self):
+        # Envoie la commande /kick suivie du nom d'utilisateur à kicker
+        username = self.entry_message.text()
+        self.client_thread.client_socket.send(f"/kick @{username}".encode())
+
+    def ban_user(self):
+        # Envoie la commande /ban suivie du nom d'utilisateur à bannir
+        username = self.entry_message.text()
+        self.client_thread.client_socket.send(f"/ban @{username}".encode())
+
+    def kill_server(self):
+        # Envoie la commande /kill pour arrêter le serveur
+        self.client_thread.client_socket.send("/kill".encode())
 
 
 if __name__ == '__main__':
