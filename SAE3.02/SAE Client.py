@@ -1,5 +1,5 @@
 import socket
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QTextBrowser, QComboBox, QInputDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QTextBrowser, QComboBox, QInputDialog, QMessageBox
 from PyQt5.QtCore import QThread, pyqtSignal, QDateTime
 
 class ClientThread(QThread):
@@ -124,15 +124,46 @@ class ChatClient(QWidget):
             self.client_thread.verification_response.connect(self.handle_verification_response)
             self.client_thread.disconnected.connect(self.client_disconnected)
             self.client_thread.start()
+            # Dans la méthode authenticate, lorsque l'utilisateur se connecte avec succès
+            self.send_user_status("connected")
+
+            # Lorsque l'utilisateur se déconnecte
+            self.send_user_status("disconnected")
+
+            # Lorsque l'utilisateur est absent
+            self.send_user_status("away")
 
         except Exception as e:
             print(f"Error during authentication: {e}")
 
+    def handle_verification_response(self, response):
+        if response == "USER_BANNED":
+            print("Tu as été banni du serveur.")
+            self.client_thread.client_socket.close()
+        elif response == "ROOM_VERIFICATION_REQUIRED":
+            # Boîte de dialogue pour demander à l'utilisateur s'il veut rejoindre le salon
+            reply = QMessageBox.question(self, 'Room Verification',
+                                         'Veux-tu rejoindre le salon?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                # L'utilisateur veut rejoindre le salon, envoyez une réponse au serveur
+                self.client_thread.client_socket.send("/verification Allow".encode())
+            else:
+                # L'utilisateur refuse de rejoindre le salon, envoyez une réponse au serveur
+                self.client_thread.client_socket.send("/verification Deny".encode())
+        elif response == "AUTH_SUCCESS":
+            print("Authentication successful. You have joined the server.")
+        elif response == "AUTH_FAIL":
+            print("Authentication failed. Invalid username or password.")
+        else:
+            print("Unknown response:", response)
+
     def send_message(self):
         if self.client_thread and self.client_thread.client_socket:
             message = self.entry_message.text()
-            QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
-            message_with_datetime = f" {message}"
+            datetime_str = QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
+            message_with_datetime = f"{datetime_str} {message}"
             self.client_thread.client_socket.send(message_with_datetime.encode())
             self.entry_message.clear()
         else:
@@ -141,9 +172,12 @@ class ChatClient(QWidget):
     def receive_message(self, message):
         self.message_received.emit(message)
 
-    def handle_verification_response(self, response):
-        print(response)
-        # Handle verification response here, e.g., show a dialog or take appropriate actions
+    def send_user_status(self, status):
+        if self.client_thread and self.client_thread.client_socket:
+            self.client_thread.client_socket.send(f"/status {status}".encode())
+        else:
+            print("Not connected to the server.")
+
 
     def client_disconnected(self):
         self.client_thread.quit()
@@ -187,7 +221,7 @@ class ChatClient(QWidget):
 
 if __name__ == '__main__':
     host = '127.0.0.1'
-    port = 5557
+    port = 5558
 
     app = QApplication([])
 

@@ -27,6 +27,7 @@ class ChatServer:
         self.banned_users = set()
         self.room_verification_required = {"Informatique", "Comptabilité", "Marketing"}
         self.access_requests = {}
+        self.user_statuses = {}  # Dictionnaire pour stocker l'état de chaque utilisateur
 
     def start(self):
         self.server_socket.bind((self.host, self.port))
@@ -75,6 +76,9 @@ class ChatServer:
             self.clients[client_socket] = {"username": username, "room": room}
             print(f"Client connected: {username} (Room: {room})")
 
+            # Informez le serveur que l'utilisateur est connecté
+            self.update_user_status(username, "connected")
+
             while True:
                 message = client_socket.recv(1024).decode()
                 if not message:
@@ -92,6 +96,9 @@ class ChatServer:
                     self.handle_request_command(message)
                 elif message.startswith("/verification"):
                     self.handle_verification_command(message)
+                elif message.startswith("/status"):
+                    # Gérez l'information d'état de l'utilisateur
+                    self.handle_status_command(message)
                 else:
                     sender_username = self.clients[client_socket]["username"]
                     room = self.clients[client_socket]["room"]
@@ -113,10 +120,28 @@ class ChatServer:
             print("Client disconnected")
             try:
                 del self.clients[client_socket]
+                if username:
+                    # Informez le serveur que l'utilisateur est déconnecté
+                    self.update_user_status(username, "disconnected")
             except KeyError:
                 pass
 
             client_socket.close()
+
+    def handle_status_command(self, message):
+        # Extrait le nom d'utilisateur et l'état à partir du message (par exemple, si le message est "/status @Mathieu connected", extrayez "Mathieu" et "connected")
+        parts = message.split(" ")
+        username = parts[1].lstrip("@")
+        status = parts[2]
+
+        # Mettez à jour l'état de l'utilisateur dans le dictionnaire user_statuses
+        self.user_statuses[username] = status
+
+    def update_user_status(self, username, status):
+        # Mettez à jour l'état de l'utilisateur (par exemple, "connected", "disconnected", "away") dans votre logique.
+        # Vous pouvez stocker ces informations dans un dictionnaire ou une base de données selon vos besoins.
+        # Dans cet exemple, nous utilisons simplement un dictionnaire pour stocker l'état de chaque utilisateur.
+        self.user_statuses[username] = status
 
     def handle_kick_command(self, message):
         username_to_kick = message.split(" ")[1].lstrip("@")
@@ -171,7 +196,7 @@ class ChatServer:
         else:
             print(f"User {username_to_room} not found.")
 
-    def handle_request_command(self, message):
+    def handle_request_command(self, message, client_socket):
         # Extrait le nom d'utilisateur à partir du message (par exemple, si le message est "/request @Mathieu", extrayez "Mathieu")
         username_to_request = message.split(" ")[1].lstrip("@")
 
@@ -237,7 +262,7 @@ class ChatServer:
 
 if __name__ == '__main__':
     host = '127.0.0.1'
-    port = 5557
+    port = 5558
 
     cursor = db_connection.cursor()
     cursor.execute("""
