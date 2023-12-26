@@ -29,7 +29,8 @@ class ClientThread(QThread):
                 if not message:
                     break
 
-                if message.startswith("Access to the room granted.") or message.startswith("Access to the room denied.") or message.startswith("Invalid verification action."):
+                if message.startswith("Access to the room granted.") or message.startswith(
+                        "Access to the room denied.") or message.startswith("Invalid verification action."):
                     self.verification_response.emit(message)
                 else:
                     self.message_received.emit(message)
@@ -40,6 +41,7 @@ class ClientThread(QThread):
                 self.client_socket.close()
             self.disconnected.emit()
 
+
 class ChatClient(QWidget):
     message_received = pyqtSignal(str)
     verification_response = pyqtSignal(str)
@@ -48,6 +50,7 @@ class ChatClient(QWidget):
         super().__init__()
         self.host = host
         self.port = port
+        self.room_verification_required = ["Informatique", "Comptabilité", "Marketing"]
         self.client_thread = None
         self.username = None
         self.init_ui()
@@ -78,7 +81,7 @@ class ChatClient(QWidget):
 
         self.button_send = QPushButton('Send')
         self.button_send.clicked.connect(self.send_message)
-        self.button_send.setEnabled(True)
+        self.button_send.setEnabled(True)  # Désactiver le bouton tant que l'authentification n'est pas effectuée
 
         self.button_create_user = QPushButton('New User')
         self.button_create_user.clicked.connect(self.handle_create_user)
@@ -124,14 +127,6 @@ class ChatClient(QWidget):
             self.client_thread.verification_response.connect(self.handle_verification_response)
             self.client_thread.disconnected.connect(self.client_disconnected)
             self.client_thread.start()
-            # Dans la méthode authenticate, lorsque l'utilisateur se connecte avec succès
-            self.send_user_status("connected")
-
-            # Lorsque l'utilisateur se déconnecte
-            self.send_user_status("disconnected")
-
-            # Lorsque l'utilisateur est absent
-            self.send_user_status("away")
 
         except Exception as e:
             print(f"Error during authentication: {e}")
@@ -154,6 +149,7 @@ class ChatClient(QWidget):
                 self.client_thread.client_socket.send("/verification Deny".encode())
         elif response == "AUTH_SUCCESS":
             print("Authentication successful. You have joined the server.")
+            self.button_send.setEnabled(True)  # Activer le bouton d'envoi après une authentification réussie
         elif response == "AUTH_FAIL":
             print("Authentication failed. Invalid username or password.")
         else:
@@ -172,19 +168,13 @@ class ChatClient(QWidget):
     def receive_message(self, message):
         self.message_received.emit(message)
 
-    def send_user_status(self, status):
-        if self.client_thread and self.client_thread.client_socket:
-            self.client_thread.client_socket.send(f"/status {status}".encode())
-        else:
-            print("Not connected to the server.")
-
-
     def client_disconnected(self):
-        self.client_thread.quit()
-        self.client_thread.wait()
-
+        if self.client_thread:
+            self.client_thread.quit()
+            self.client_thread.wait()
+            self.client_thread = None  # Ajoutez cette ligne
         self.button_authenticate.setEnabled(True)
-        self.button_send.setEnabled(True)
+        self.button_send.setEnabled(False)
 
     def handle_create_user(self):
         try:

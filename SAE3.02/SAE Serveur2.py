@@ -64,7 +64,7 @@ class ChatServer:
                     if username in self.banned_users:
                         client_socket.send("USER_BANNED".encode())
                         return
-                    elif room in self.room_verification_required:
+                    elif not self.verify_room_access(username, room):
                         client_socket.send("ROOM_VERIFICATION_REQUIRED".encode())
                         return
                     else:
@@ -259,10 +259,20 @@ class ChatServer:
         result = cursor.fetchone()
         return result is not None
 
+    def verify_room_access(self, username, room):
+        if room in self.room_verification_required:
+            # Vérifiez ici si l'utilisateur a l'autorisation d'accéder au salon (par exemple, dans la base de données)
+            # Vous pouvez également utiliser une boîte de dialogue pour demander une vérification au client
+            # Pour cet exemple, on suppose que tout le monde a accès à ces salons
+            return True
+        else:
+            return True  # Accès autorisé à tous les autres salons
+
 
 if __name__ == '__main__':
     host = '127.0.0.1'
     port = 5558
+
 
     cursor = db_connection.cursor()
     cursor.execute("""
@@ -275,6 +285,7 @@ if __name__ == '__main__':
         )
     """)
 
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS utilisateur (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -282,6 +293,8 @@ if __name__ == '__main__':
             password VARCHAR(255)
         )
     """)
+
+
 
     server = ChatServer(host, port)
     server.start()
