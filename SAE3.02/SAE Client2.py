@@ -112,15 +112,19 @@ class ChatClient(QWidget):
         self.button_send.clicked.connect(self.send_message)
         self.button_send.setEnabled(True)  # Désactiver le bouton tant que l'authentification n'est pas effectuée
 
+        # Bouton pour crée un nouvel Utilisateur
         self.button_create_user = QPushButton('New User')
         self.button_create_user.clicked.connect(self.handle_create_user)
 
+        # Bouton pour Kick un Utilisateur
         self.button_kick = QPushButton('Kick User')
         self.button_kick.clicked.connect(self.kick_user)
 
+        # Bouton pour Ban un Utilisateur
         self.button_ban = QPushButton('Ban User')
         self.button_ban.clicked.connect(self.ban_user)
 
+        # Bouton pour fermer le serveur
         self.button_kill = QPushButton('Kill Server')
         self.button_kill.clicked.connect(self.kill_server)
 
